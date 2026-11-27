@@ -1,15 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TF FB Reels &amp; Post Maker</string>
-    <string name="browser_back_desc">পেছনে যান</string>
-    <string name="browser_forward_desc">সামনে যান</string>
-    <string name="browser_reload_desc">রিফ্রেশ করুন</string>
-    <string name="browser_close_desc">ব্রাউজার বন্ধ করুন</string>
-    <string name="browser_default_title">সংবাদপত্র</string>
-    <string name="share_dialog_title">শেয়ার করুন</string>
+    <string name="nav_news">হোম</string>
+    <string name="nav_ai_studio">AI স্টুডিও</string>
+    <string name="nav_photo_card">ফটো কার্ড</string>
+    <string name="nav_post_reels">পোস্ট ও রিলস</string>
+    <string name="action_brand_settings">পেজ ব্র্যান্ডিং সেটিংস</string>
+    <string name="action_refresh">খবর রিফ্রেশ করুন</string>
+    <string name="action_fetch_url">খবর আনুন</string>
+    <string name="action_paste_news">নিজে খবর লিখুন বা পেস্ট করুন</string>
+    <string name="action_pick_logo">পেজের লোগো বাছাই করুন</string>
+    <string name="action_save_gallery">গ্যালারিতে সেভ করুন</string>
+    <string name="action_share_facebook">ফেসবুকে শেয়ার করুন</string>
+    <string name="action_copy_text">কপি করুন</string>
+    <string name="action_export_reel">MP4 রিলস তৈরি করুন</string>
+    <string name="hint_news_url">সংবাদের লিংক পেস্ট করুন (প্রথম আলো, বিবিসি, সমকাল…)</string>
     <string name="export_channel_name">ভিডিও তৈরি</string>
-    <string name="export_channel_desc">ভিডিও এক্সপোর্টের অগ্রগতি</string>
-    <string name="export_default_title">ভিডিও তৈরি হচ্ছে</string>
+    <string name="export_channel_desc">রিলস ভিডিও এক্সপোর্টের অগ্রগতি</string>
+    <string name="export_default_title">রিলস ভিডিও তৈরি হচ্ছে</string>
     <string name="export_done_title">ভিডিও তৈরি হয়েছে</string>
-    <string name="back_exit_prompt">বের হতে আবার Back চাপুন</string>
+    <string name="cd_page_logo">পেজের লোগো</string>
+    <string name="cd_news_thumb">সংবাদের ছবি</string>
+    <string name="cd_photo_card_preview">ফটো কার্ড প্রিভিউ</string>
+    <string name="cd_ai_generated_image">AI তৈরি ছবি</string>
+    <string name="cd_close">বন্ধ করুন</string>
 </resources>
