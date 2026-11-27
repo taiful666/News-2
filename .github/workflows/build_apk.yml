@@ -20,6 +20,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 36 and accept licenses
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -35,15 +43,23 @@ jobs:
             fi
           fi
 
+      - name: Verify required build files
+        run: |
+          ls -la debug.keystore
+          if [ ! -f app/google-services.json ]; then
+            echo "::error::app/google-services.json is missing from the repository. Please ensure it is pushed to GitHub."
+            exit 1
+          fi
+
       - name: Ensure Gradle wrapper is available
         run: |
           if [ ! -f ./gradlew ]; then
-            gradle wrapper --gradle-version 9.3.1
+            gradle wrapper --gradle-version 9.3.1 --no-daemon
           fi
           chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx3072m -Dfile.encoding=UTF-8"
 
       - name: Upload Debug APK artifact
         uses: actions/upload-artifact@v4
