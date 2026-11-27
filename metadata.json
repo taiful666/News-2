@@ -1,0 +1,8 @@
+{
+  "name": "TF FB Reels & Post Maker",
+  "description": "Bengali news reader, photo card designer, and Facebook Reels video creator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

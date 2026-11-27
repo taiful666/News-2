@@ -1,0 +1,142 @@
+# Builds the TF FB Reels & Post Maker Android app (APK) on GitHub's servers.
+# Runs by itself whenever the app (index.html) or the android-app folder changes,
+# or by hand from the Actions tab ("Run workflow").
+# The finished APK is put on the repository's Releases page (tag: android-latest).
+name: Build Android app (APK)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'android-app/**'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install app tools
+        run: npm install --no-audit --no-fund
+
+      - name: Copy the web app into the Android project
+        run: node prepare-www.mjs
+
+      - name: Create the Android project
+        run: npx cap add android
+
+      - name: Add the in-app updater (download + install inside the app, no browser)
+        run: node add-updater.mjs
+
+      - name: Make icons and splash screen from the logo
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#0B1430' --iconBackgroundColorDark '#0B1430' --splashBackgroundColor '#0B1430' --splashBackgroundColorDark '#0B1430'
+
+      - name: Full-size launcher icon (remove the 16.7% padding the icon tool adds)
+        run: |
+          for f in android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml; do
+            [ -f "$f" ] || continue
+            cat > "$f" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@mipmap/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          XML
+            sed -i 's/^          //' "$f"
+            echo "== $f"; cat "$f"
+          done
+          ! grep -rq 'android:inset' android/app/src/main/res/mipmap-anydpi-v26/
+          node sharp-icons.mjs
+
+      - name: Set version number
+        run: |
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -E 'versionCode|versionName' android/app/build.gradle
+
+      - name: Sync plugins
+        run: npx cap sync android
+
+      - name: Use the fixed signing key (so updates install over the old app)
+        env:
+          KS: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KS" ]; then
+            echo "::error::The fixed signing key (secret ANDROID_DEBUG_KEYSTORE_B64) is missing. Add it in Settings > Secrets and variables > Actions, then run this again."
+            exit 1
+          fi
+          KSF="$GITHUB_WORKSPACE/android-app/android/app/tf-signing.keystore"
+          echo "$KS" | tr -d ' \r\n' | base64 -d > "$KSF"
+          keytool -list -keystore "$KSF" -storepass android -alias androiddebugkey > /dev/null
+          # Tell Gradle to sign with this key (instead of making a temporary one)
+          cat >> "$GITHUB_WORKSPACE/android-app/android/app/build.gradle" <<'GRADLE'
+
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile file('tf-signing.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+          }
+          GRADLE
+          keytool -exportcert -keystore "$KSF" -storepass android -alias androiddebugkey | sha256sum | cut -d' ' -f1 > "$RUNNER_TEMP/key.sha256"
+          echo "Fixed signing key in use"
+
+      - name: Build the APK
+        working-directory: android-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/TF-FB-Reels-Post-Maker.apk"
+          # Safety check: the APK must be signed with the fixed key, otherwise stop
+          SIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          GOT=$("$SIGNER" verify --print-certs "$GITHUB_WORKSPACE/TF-FB-Reels-Post-Maker.apk" | grep -m1 'SHA-256 digest' | awk '{print $NF}')
+          WANT=$(cat "$RUNNER_TEMP/key.sha256")
+          echo "APK key: $GOT"
+          if [ "$GOT" != "$WANT" ]; then echo "::error::APK is not signed with the fixed key"; exit 1; fi
+
+      - name: Keep the APK as a build file
+        uses: actions/upload-artifact@v4
+        with:
+          name: TF-FB-Reels-Post-Maker-apk
+          path: TF-FB-Reels-Post-Maker.apk
+
+      - name: Publish the APK on the Releases page
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SUM=$(sha256sum TF-FB-Reels-Post-Maker.apk | cut -d' ' -f1)
+          gh release delete android-latest --yes --cleanup-tag || true
+          printf '{"build":%s,"version":"1.0.%s","sha256":"%s"}\n' "${{ github.run_number }}" "${{ github.run_number }}" "$SUM" > version.json
+          gh release create android-latest TF-FB-Reels-Post-Maker.apk version.json \
+            --target "${{ github.sha }}" \
+            --title "TF FB Reels & Post Maker — Android app (build ${{ github.run_number }})" \
+            --notes "ফোনে ইনস্টল করতে TF-FB-Reels-Post-Maker.apk ফাইলটি ডাউনলোড করে খুলুন। (Build ${{ github.run_number }})
+
+          SHA256: $SUM"

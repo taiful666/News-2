@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TF FB Reels &amp; Post Maker</string>
+    <string name="browser_back_desc">পেছনে যান</string>
+    <string name="browser_forward_desc">সামনে যান</string>
+    <string name="browser_reload_desc">রিফ্রেশ করুন</string>
+    <string name="browser_close_desc">ব্রাউজার বন্ধ করুন</string>
+    <string name="browser_default_title">সংবাদপত্র</string>
+    <string name="share_dialog_title">শেয়ার করুন</string>
+    <string name="export_channel_name">ভিডিও তৈরি</string>
+    <string name="export_channel_desc">ভিডিও এক্সপোর্টের অগ্রগতি</string>
+    <string name="export_default_title">ভিডিও তৈরি হচ্ছে</string>
+    <string name="export_done_title">ভিডিও তৈরি হয়েছে</string>
+    <string name="back_exit_prompt">বের হতে আবার Back চাপুন</string>
+</resources>
