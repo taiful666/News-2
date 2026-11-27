@@ -43,12 +43,22 @@ jobs:
             fi
           fi
 
-      - name: Verify required build files
+      - name: Prepare google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          ls -la debug.keystore
           if [ ! -f app/google-services.json ]; then
-            echo "::error::app/google-services.json is missing from the repository. Please ensure it is pushed to GitHub."
-            exit 1
+            if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+              FIRST_CHAR=$(printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d ' \t\r\n' | cut -c1)
+              if [ "$FIRST_CHAR" = "{" ]; then
+                printf '%s\n' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+              else
+                printf '%s' "$GOOGLE_SERVICES_JSON" | tr -d ' \t\r\n' | base64 -d > app/google-services.json
+              fi
+            else
+              echo "::error::app/google-services.json is missing! Add the contents of app/google-services.json as a GitHub Actions Secret named GOOGLE_SERVICES_JSON (Settings -> Secrets and variables -> Actions -> New repository secret)."
+              exit 1
+            fi
           fi
 
       - name: Ensure Gradle wrapper is available
